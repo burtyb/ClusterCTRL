@@ -1,0 +1,23 @@
+Cluster Triple
+
+
+     PGM        | E
+MISO 1 2  3v3   | D
+SCK  3 4  MOSI  | G
+RST  5 6  GND   | E
+
+
+Triple / Physical / GPIO
+1 MISO / 12 / BCM18
+2 3V3  / NC / NC
+3 SCK  / 18 / BCM24
+4 MOSI / 16 / BCM23
+5 RST  / 32 / BCM12
+6 GND  / 6  / GND
+
+// avrdude config
+  reset = 12;
+  sck   = 24;
+  mosi  = 23;
+  miso  = 18;
+

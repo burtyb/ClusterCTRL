@@ -1,0 +1,21 @@
+Cluster A+6
+
+2 4 6
+1 3 5
+
+-- edge --
+
+A+6 / Physical / GPIO
+1 MISO / 12 / BCM18
+2 3V3  / NC / NC
+3 SCK  / 18 / BCM24
+4 MOSI / 16 / BCM23
+5 RST  / 32 / BCM12
+6 GND  / 6  / GND
+
+// avrdude config
+  reset = 12;
+  sck   = 24;
+  mosi  = 23;
+  miso  = 18;
+
