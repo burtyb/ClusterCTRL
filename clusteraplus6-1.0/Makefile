@@ -7,8 +7,8 @@
 # License: Proprietary, free under certain conditions. See Documentation.
 # This Revision: $Id: Makefile-avrusb.tiny45,v 1.3 2007/06/07 13:53:47 harbaum Exp $
 
-# DEFINES += -DDEBUG
-# DEFINES += -DDEBUG_LEVEL=1
+#DEFINES += -DDEBUG
+#DEFINES += -DDEBUG_LEVEL=1
 DEFINES += -DF_CPU=12000000
 PROGRAMMER = pi_1
 #COMPILE = avr-gcc -Wl,--gc-sections -Wall -O2 -I../src/usbdrv -I../src -mmcu=atmega328p $(DEFINES)
