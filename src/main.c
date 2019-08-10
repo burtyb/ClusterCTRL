@@ -193,7 +193,7 @@ static void i2c_io_set_scl(uchar hi) {
 
 static void i2c_init(void) {
 # if defined(DEBUGI2C)
-  DEBUGF("INIT 20190522\n");
+  DEBUGF("INIT\n");
 # endif
   /* init the sda/scl pins */
   I2C_DDR &= ~I2C_SDA;            // port is input
@@ -369,7 +369,7 @@ struct chdta_data {
 #define STATUSE_GOTADDR 	2
 #define CTRL_VERSION    	0x02    // Version of the struct
 #define VERSION_MAJOR   	0x01    // Major version
-#define VERSION_MINOR   	0x00    // Minor version
+#define VERSION_MINOR   	0x01    // Minor version
 
 uchar emulated_status = STATUSE_NEEDADDR;
 uchar emulated_address = 0;
@@ -1471,34 +1471,6 @@ DEBUGF("INIT 20190522\n");
 	LEDALERTPORT &= ~(1<<LEDALERTPIN);
 	reg.cmd=0; // DONE
 	reg.status=0x0; // No error
-	//
-#if defined(ADCEN)
-	adc_init();
-# if defined(ADC1)
-	tmpu8 = ADC1;
-	tmpu8 &= 0b00000111;
-	ADMUX = (ADMUX & 0xF8)|tmpu8;
-	ADCSRA |= (1<<ADSC);
-	while(ADCSRA & (1<<ADSC));
-	DEBUGF("ADC1 %d\n", (int)((double)ADC*6.4453125) );
-# endif
-# if defined(ADC2)
-	tmpu8 = ADC2;
-	tmpu8 &= 0b00000111;
-	ADMUX = (ADMUX & 0xF8)|tmpu8; 
-        ADCSRA |= (1<<ADSC);
-	while(ADCSRA & (1<<ADSC));
-	DEBUGF("ADC2 %d\n", (int)((double)ADC*6.4453125));
-# endif
-	ADMUX = (1<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (0<<MUX2) | (0<<MUX1) | (0<<MUX0);
-	ADCSRA |= (1<<ADSC);
-	while(ADCSRA & (1<<ADSC));
-	ADCSRA |= (1<<ADSC);
-	while(ADCSRA & (1<<ADSC));
-	DEBUGF("TEMP %f\n", (ADC - 324.31)/1.22);
-	adc_init(); // Set ADC back to normal ready for the next read
-#endif
-	//
      } else if (reg.cmd==I2C_CMD_SAVE) { // Save state
 	DEBUGF("Save all states\n");
 	save_order();
@@ -1506,6 +1478,7 @@ DEBUGF("INIT 20190522\n");
 	save_led();
 
 	save_pos();
+
 #if defined(USBBOOT)
 	save_usbboot();
 #endif
@@ -1587,7 +1560,7 @@ DEBUGF("INIT 20190522\n");
 	reg.cmd=0; // DONE
 	reg.status=0x00; // No error
      } else if (reg.cmd==I2C_CMD_GET_PSTATUS) { // Get power status
-	DEBUGF("\n\nGet power status \n\n", reg.data0);
+	DEBUGF("\n\nGet power status %d\n", reg.data0);
         if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
 #if defined(GPIOCTRL)
 	 reg.data0 = (((*pled[reg.data0-1][0]) >> (int)pled[reg.data0-1][1])&0x1);
@@ -1614,7 +1587,7 @@ DEBUGF("INIT 20190522\n");
 	DEBUGF("data0: %d\n", reg.data0);
      } else if (reg.cmd==I2C_CMD_GET_USTATUS) { // Get USBBOOT status
 #if defined(USBBOOT)
-      DEBUGF("\n\nGet USBBOOT status 0x%x\n\n\n", reg.data0);
+      DEBUGF("\n\nGet USBBOOT status %d\n", reg.data0);
       if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
        reg.data0 = (((*usbboot[reg.data0-1][0]) >> (int)usbboot[reg.data0-1][1])&0x1);
        reg.cmd=0; // DONE
@@ -1642,7 +1615,10 @@ DEBUGF("INIT 20190522\n");
 	reg.status=0x00; // No error
 #endif
      } else if (reg.cmd==I2C_CMD_GETDATA) {
+      reg.status=0x01; // (fallback) Unsupported
+      DEBUGF("GETDATA\n");
       if(reg.data0==0) { // Get version
+       DEBUGF("- Version\n");
        reg.data0=VERSION_MINOR;
        reg.data1=VERSION_MAJOR;
        reg.data2=0xFF;
@@ -1653,6 +1629,7 @@ DEBUGF("INIT 20190522\n");
        reg.data7=0xFF;
        reg.status=0x00; // No error
       } else if(reg.data0==1) { // Get number of ADC
+       DEBUGF("- Number of ADC\n");
        reg.data0 = 0;
 #if defined(ADC1)
        reg.data0++;
@@ -1662,7 +1639,7 @@ DEBUGF("INIT 20190522\n");
 #endif
        reg.status=0x00; // No error
       } else if(reg.data0==2) { // Read ADC #reg.data1
-       reg.status=0x01; // (fallback) Unsupported 
+       DEBUGF("- Read ADC %d\n", reg.data1);
 #if defined(ADC1)
        if(reg.data1==1) {
         adc_init();
@@ -1671,10 +1648,12 @@ DEBUGF("INIT 20190522\n");
         ADMUX = (ADMUX & 0xF8)|tmpu8;
         ADCSRA |= (1<<ADSC);
         while(ADCSRA & (1<<ADSC));
-        DEBUGF("ADC1 %d\n", (int)((double)ADC*6.4453125) );
         reg.data0 = ADC1TYPE;
-        reg.data1 = ADCL; // ADC Low byte
-        reg.data2 = ADCH; // ADC High byte
+	reg.data1 = ADCL; // ADC Low byte
+	reg.data2 = ADCH; // ADC High byte
+	DEBUGF("L: %d\n", reg.data1);
+	DEBUGF("H: %d\n", reg.data2);
+	DEBUGF("ADC1 %d mV\n", (int)((double)( (reg.data2<<8)+reg.data1 )*6.4453125) );
         reg.status=0x00; // No error
        }
 #endif
@@ -1686,29 +1665,33 @@ DEBUGF("INIT 20190522\n");
         ADMUX = (ADMUX & 0xF8)|tmpu8;
         ADCSRA |= (1<<ADSC);
         while(ADCSRA & (1<<ADSC));
-        DEBUGF("ADC2 %d\n", (int)((double)ADC*6.4453125));
         reg.data0 = ADC2TYPE;
         reg.data1 = ADCL; // ADC Low byte
         reg.data2 = ADCH; // ADC High byte
+        DEBUGF("L: %d\n", reg.data1);
+        DEBUGF("H: %d\n", reg.data2);
+        DEBUGF("ADC2 %d mV\n", (int)((double)( (reg.data2<<8)+reg.data1 )*6.4453125) );
         reg.status=0x00; // No error
        }
 #endif
+      } else if(reg.data0==3) { // Read Temp
 #if defined(ADCTEMP)
-       if(reg.data0==3) { // Get IC temperature
-        reg.status=0x01; // (fallback) Unsupported
-        adc_init();
-        ADMUX = (1<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (0<<MUX2) | (0<<MUX1) | (0<<MUX0);
-        ADCSRA |= (1<<ADSC);
-        while(ADCSRA & (1<<ADSC));
-        ADCSRA |= (1<<ADSC);
-        while(ADCSRA & (1<<ADSC));
-        DEBUGF("TEMP %f\n", (ADC - 324.31)/1.22);
-        reg.data0 = ADCTEMP;
-        reg.data1 = ADCL; // ADC Low byte
-        reg.data2 = ADCH; // ADC High byte
-        reg.status=0x00; // No error
-        adc_init(); // Set ADC back to normal ready for the next read
-       }
+       DEBUGF("- Temp\n");
+       adc_init();
+       ADMUX = (1<<REFS1) | (1<<REFS0) | (0<<ADLAR) | (1<<MUX3) | (0<<MUX2) | (0<<MUX1) | (0<<MUX0);
+       ADCSRA |= (1<<ADSC);
+       while(ADCSRA & (1<<ADSC));
+       ADCSRA |= (1<<ADSC);
+       while(ADCSRA & (1<<ADSC));
+       DEBUGF("TEMP %f\n", (ADC - 324.31)/1.22);
+       reg.data0 = ADCTEMP;
+       reg.data1 = ADCL; // ADC Low byte
+       reg.data2 = ADCH; // ADC High byte
+       DEBUGF("L: %d\n", reg.data1);
+       DEBUGF("H: %d\n", reg.data2);
+       DEBUGF("TEMP %f\n", ((double)((reg.data2<<8)+reg.data1)  - 324.31)/1.22);
+       reg.status=0x00; // No error
+       adc_init(); // Set ADC back to normal ready for the next read
 #endif
       }
       reg.cmd=0; // DONE
