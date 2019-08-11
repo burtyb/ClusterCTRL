@@ -1233,7 +1233,7 @@ int	main(void) {
   stdout = &mystdout;
 #endif
 
-DEBUGF("INIT 20190522\n");
+DEBUGF("INIT\n");
 
 /* Set ports as outputs */
 #if defined(DDRBINIT)
