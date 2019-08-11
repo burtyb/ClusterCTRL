@@ -400,7 +400,7 @@ struct i2creg {
 
 } reg;
 
-/* I2C Commands (write to register 0x06) */
+/* I2C Commands (write to register 0x0d) */
 #define I2C_CMD_INIT    	0x01 // Unused
 #define I2C_CMD_RESCAN  	0x02 // Unused
 #define I2C_CMD_ON		0x03 // Turn on Pi Zero in data0
