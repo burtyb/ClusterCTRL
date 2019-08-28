@@ -1328,12 +1328,12 @@ DEBUGF("INIT\n");
 #endif
    for(tmpu8=0;tmpu8<8;tmpu8++) { // Loop through each bit
     if( ((i*8)+tmpu8)<CTRL_MAXPI ) {
-     if( ((state.enp[i]>>i)&0x1) ) { // Px is enabled
+     if( ((state.enp[i]>>tmpu8)&0x1) ) { // Px is enabled
 #if defined(GPIOCTRL)
       (*p[((i*8)+tmpu8)][0]) |= (1 << (int)p[((i*8)+tmpu8)][1]);
 #endif
       // Is LEDPx enabled?
-      if( ((state.enpled[ ((i*8)+tmpu8) ]>>i)&0x1) ) { // PxLED is enabled
+      if( ((state.enpled[i]>>tmpu8)&0x1) ) { // PxLED is enabled
 #if defined(GPIOCTRL)
        (*pled[((i*8)+tmpu8)][0]) |= (1<< (int)pled[((i*8)+tmpu8)][1]);
 #endif
@@ -1341,7 +1341,7 @@ DEBUGF("INIT\n");
      }
 
 #if defined(USBBOOT)
-     if( ((state.usbboot[i]>>i)&0x1) ) { // PxUSBBOOT is enabled
+     if( ((state.usbboot[i]>>tmpu8)&0x1) ) { // PxUSBBOOT is enabled
 #if defined(GPIOCTRL)
       (*usbboot[((i*8)+tmpu8)][0]) |= (1 << (int)usbboot[((i*8)+tmpu8)][1]);
 #else
@@ -1386,6 +1386,8 @@ DEBUGF("INIT\n");
 #if defined(GPIOCTRL)
        // Turn on Px
        (*p[reg.data0-1][0]) |= 1<< (int)p[reg.data0-1][1];
+       // Update state
+       state.enp[P2BYTE(reg.data0-1)] |= 1<< P2BIT(reg.data0-1);
        // If PxLED is enabled turn it on
        if( state.enpled[ P2BYTE(reg.data0) ]&(1<<P2BIT(reg.data0)) ) {
         (*pled[reg.data0-1][0]) |= 1<< (int)pled[reg.data0-1][1];
@@ -1409,6 +1411,8 @@ DEBUGF("INIT\n");
 #if defined(GPIOCTRL)
        // Turn power off
        (*p[reg.data0-1][0]) &= ~(1 << (int)p[reg.data0-1][1]);
+       // Update state
+       state.enp[P2BYTE(reg.data0-1)] &= ~(1<< P2BIT(reg.data0-1));
        // Turn PxLED off
        (*pled[reg.data0-1][0]) &= ~(1 << (int)pled[reg.data0-1][1]);
 #elif defined(DTA)
@@ -1429,6 +1433,7 @@ DEBUGF("INIT\n");
       if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
        DEBUGF("P%d ON\n", reg.data0);
        (*usbboot[reg.data0-1][0]) |= 1<< (int)usbboot[reg.data0-1][1];
+       state.usbboot[ (P2BYTE(reg.data0-1)) ] |= (1<<P2BIT(reg.data0-1));
       }
       reg.cmd=0; // DONE
       reg.status=0x0; // No error
@@ -1437,6 +1442,7 @@ DEBUGF("INIT\n");
       if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
        DEBUGF("P%d OFF\n", reg.data0);
        (*usbboot[reg.data0-1][0]) &= ~(1 << (int)usbboot[reg.data0-1][1]);
+       state.usbboot[ (P2BYTE(reg.data0-1)) ] &= ~(1<<P2BIT(reg.data0-1));
       }
       reg.cmd=0; // DONE
       reg.status=0x0; // No error
@@ -1533,7 +1539,7 @@ DEBUGF("INIT\n");
 	for(i=0;i<CTRL_SIZE;i++) {
 		DEBUGF("Reset Byte %d\n", i);
                 eeprom_write_byte((uint8_t*)0x10+i, 0xFF); // PxLED Enabled
-                eeprom_write_byte((uint8_t*)0x30+i, 0x0); // Px OFF
+                eeprom_write_byte((uint8_t*)0x30+i, 0x00); // Px OFF
 #if defined(USBBOOT)
 		eeprom_write_byte((uint8_t*)0x50+i, 0xFF); // USBBOOT Enabled
 #endif
