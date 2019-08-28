@@ -369,7 +369,7 @@ struct chdta_data {
 #define STATUSE_GOTADDR 	2
 #define CTRL_VERSION    	0x02    // Version of the struct
 #define VERSION_MAJOR   	0x01    // Major version
-#define VERSION_MINOR   	0x01    // Minor version
+#define VERSION_MINOR   	0x02    // Minor version
 
 uchar emulated_status = STATUSE_NEEDADDR;
 uchar emulated_address = 0;
@@ -1387,9 +1387,9 @@ DEBUGF("INIT\n");
        // Turn on Px
        (*p[reg.data0-1][0]) |= 1<< (int)p[reg.data0-1][1];
        // Update state
-       state.enp[P2BYTE(reg.data0-1)] |= 1<< P2BIT(reg.data0-1);
+       state.enp[ P2BYTE(reg.data0-1) ] |= 1<< P2BIT(reg.data0-1);
        // If PxLED is enabled turn it on
-       if( state.enpled[ P2BYTE(reg.data0) ]&(1<<P2BIT(reg.data0)) ) {
+       if( state.enpled[ P2BYTE(reg.data0-1) ]&(1<<P2BIT(reg.data0-1)) ) {
         (*pled[reg.data0-1][0]) |= 1<< (int)pled[reg.data0-1][1];
        }
 #elif defined(DTA)
@@ -1412,7 +1412,7 @@ DEBUGF("INIT\n");
        // Turn power off
        (*p[reg.data0-1][0]) &= ~(1 << (int)p[reg.data0-1][1]);
        // Update state
-       state.enp[P2BYTE(reg.data0-1)] &= ~(1<< P2BIT(reg.data0-1));
+       state.enp[ P2BYTE(reg.data0-1) ] &= ~(1<< P2BIT(reg.data0-1));
        // Turn PxLED off
        (*pled[reg.data0-1][0]) &= ~(1 << (int)pled[reg.data0-1][1]);
 #elif defined(DTA)
@@ -1448,19 +1448,49 @@ DEBUGF("INIT\n");
       reg.status=0x0; // No error
 #endif
      } else if (reg.cmd==I2C_CMD_LED_EN) { // Enable Px LED
-      if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
-       DEBUGF("P%d LED ON\n", reg.data0);
-       state.enpled[ (P2BYTE(reg.data0)) ] |= (1<<P2BIT(reg.data0));
+      if(reg.data0==0) { // All PxLED+PWR
+       // Enable PWR LED
+       state.enpwr=1;
+       LEDPWRPORT |= (1<<LEDPWRPIN);
+       // Enable PxLED and turn on if Px is on
+       for(tmpu8=1;tmpu8<=CTRL_MAXPI;tmpu8++) {
+        state.enpled[ (P2BYTE(tmpu8-1)) ] |= (1<<P2BIT(tmpu8-1));
+#if defined(GPIOCTRL)
+        if( state.enp[ (P2BYTE(tmpu8-1)) ]&(1<<P2BIT(tmpu8-1)) ) {
+         (*pled[tmpu8-1][0]) |= 1<< (int)pled[tmpu8-1][1];
+        }
+#endif
+       }
+      } else if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
+       DEBUGF("Enable LED for P%d\n", reg.data0);
+       state.enpled[ (P2BYTE(reg.data0-1)) ] |= (1<<P2BIT(reg.data0-1));
+       // If Px is on turn the LED on
+#if defined(GPIOCTRL)
+       if( state.enp[ (P2BYTE(reg.data0-1)) ]&(1<<P2BIT(reg.data0-1)) ) {
+        (*pled[reg.data0-1][0]) |= 1<< (int)pled[reg.data0-1][1];
+       }
+#endif
       }
       reg.cmd=0; // DONE
       reg.status=0x0; // No error
      } else if (reg.cmd==I2C_CMD_LED_DIS) { // Disable Px LED
-        if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
-         DEBUGF("Disable LED for P%d\n", reg.data0);
-         state.enpled[ (P2BYTE(reg.data0)) ] &= ~(1<<P2BIT(reg.data0));
-         // Turn of Px LED
+        if(reg.data0==0) { // All PxLED+PWR
+         // Disable PWR LED
+         state.enpwr=0;
+         LEDPWRPORT &= ~(1<<LEDPWRPIN);
+         // Disable PxLED
+         for(tmpu8=1;tmpu8<=CTRL_MAXPI;tmpu8++) {
+          state.enpled[ (P2BYTE(tmpu8-1)) ] &= ~(1<<P2BIT(tmpu8-1));
 #if defined(GPIOCTRL)
-         (*pled[reg.data0][0]) &= ~(1<< (int)pled[reg.data0][1]);
+          (*pled[tmpu8-1][0]) &= ~(1<< (int)pled[tmpu8-1][1]);
+#endif
+         }
+        } else if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
+         DEBUGF("Disable LED for P%d\n", reg.data0);
+         state.enpled[ (P2BYTE(reg.data0-1)) ] &= ~(1<<P2BIT(reg.data0-1));
+         // Turn off Px LED
+#if defined(GPIOCTRL)
+         (*pled[reg.data0-1][0]) &= ~(1<< (int)pled[reg.data0-1][1]);
 #endif
         }
         reg.cmd=0; // DONE
