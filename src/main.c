@@ -818,8 +818,6 @@ static void save_usbboot() {
 		eeprom_write_byte((uint8_t*)0x50+i, state.usbboot[i]);
 	}
 }
-#else
-# define save_usbboot()
 #endif
 
 #if defined(DTA)
@@ -1564,7 +1562,7 @@ DEBUGF("INIT\n");
 	DEBUGF("Reset EEPROM\n");
 	eeprom_write_byte((uint8_t*)0x01, 20); // Order
 	eeprom_write_byte((uint8_t*)0x02, 0x01); // 0x01 EN PWR LED on boot
-	eeprom_write_byte((uint8_t*)0x02, 0x01); // 0x03 EN ACT LED
+	eeprom_write_byte((uint8_t*)0x03, 0x01); // 0x03 EN ACT LED
 
 	for(i=0;i<CTRL_SIZE;i++) {
 		DEBUGF("Reset Byte %d\n", i);
