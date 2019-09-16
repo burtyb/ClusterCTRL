@@ -12,6 +12,10 @@
 
 # define CTRL_TYPE	0x00
 
+# undef GPIOA // Use GPIO array for LED/Px
+# undef GPIOD // Use GPIO defines for LED/Px
+# define GPIOE // Use I2C I/O expander
+
 # define UARTDEBUG // Hardware supports debug UART
 
 # define I2C_HW		1
@@ -42,8 +46,6 @@
 #define REG1HIGH	
 
 /* Address of devices */
-# undef GPIOCTRL // Use GPIO for LED/Px
-# define DTA // Use I2C for LED/Px 
 # define ADDR_MUX 0x70 // I2C Address of multiplexer
 # define ADDR_PRI 0x20 // I2C Address of expander on v2.x HAT
 # define ADDR_SEC 0x21 // I2C Address of expander on adapter

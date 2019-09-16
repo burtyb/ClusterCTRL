@@ -46,11 +46,3 @@ const unsigned char paths[CTRL_MAXPI+1][8] = {
         { 1, 4, 2, 255, 255, 255, 255, 255 }, /* P3 */
         { 1, 4, 1, 255, 255, 255, 255, 255 }, /* P4 */
 };
-
-# undef GPIOCTRL // Use GPIO for LED/Px
-# define I2CCTRL // Use I2C for LED/Px
-# define ADDRMUX 0x70 // I2C Address of multiplexer
-# define ADDRPRI 0x20 // I2C Address of expander on v2.x HAT
-# define ADDRSEC 0x21 // I2C Address of expander on adapter
-# define ADDREEPROM 0x50 // I2C Address of HAT EEPROM
-

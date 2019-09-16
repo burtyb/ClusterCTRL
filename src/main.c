@@ -327,7 +327,7 @@ void i2c_scan(void) {
 }
 # endif
 
-# if defined(DTA)
+# if defined(GPIOE)
 /* Read current port status on TCA9548A I2C Multiplexer */
 uchar tcaread(void) {
  uchar ret;
@@ -369,7 +369,7 @@ struct chdta_data {
 #define STATUSE_GOTADDR 	2
 #define CTRL_VERSION    	0x02    // Version of the struct
 #define VERSION_MAJOR   	0x01    // Major version
-#define VERSION_MINOR   	0x02    // Minor version
+#define VERSION_MINOR   	0x03    // Minor version
 
 uchar emulated_status = STATUSE_NEEDADDR;
 uchar emulated_address = 0;
@@ -392,7 +392,7 @@ struct i2creg {
   /* 0x0d rw */ uchar cmd;	// Command register
   /* 0x0e ro */ uchar status; 	// Status of last command (0x00=OK, 0x01 = Not supported, 0x02 No Pi Zero 0x03 unknown command, 0x04 should have reset)
   
-#if defined(DTA)
+#if defined(GPIOE)
   /* 0x20 ro */ uchar exists;	// Bits - HAT exists
   /* 0x21 ro */ // TODO uchar pos;	// Bits - POS (0=off,1=on)
   /* 0x22 ro */ // TODO uchar exp;	// Bits - Expander type (0=XRA1200P,1=PCA)
@@ -643,7 +643,7 @@ extern	byte_t	usb_in ( byte_t* data, byte_t len )
 	 *data = reg.cmd;
 	} else if (emulated_address==0x0e) { // last status
 	 *data = reg.status;
-#if defined(DTA)
+#if defined(GPIOE)
         } else if (emulated_address==0x20) { // exists
          *data = reg.exists;
 #endif
@@ -722,7 +722,7 @@ extern	void	usb_out ( byte_t* data, byte_t len )
 	reg.cmd = *data;
        } else if (emulated_address==0x0e) { // last status
 	; // R/O
-#if defined(DTA)
+#if defined(GPIOE)
        } else if (emulated_address==0x20) { // exists
         ; // R/O
 #endif
@@ -820,7 +820,7 @@ static void save_usbboot() {
 }
 #endif
 
-#if defined(DTA)
+#if defined(GPIOE)
 
 static uchar expander_read(uchar addr, uchar reg) {
  uchar ret;
@@ -1208,7 +1208,7 @@ int	main(void) {
   uint8_t tmpu8;
   uchar i;
 
-#if defined(DTA)
+#if defined(GPIOE)
  // No HAT exists on power up
  reg.exists=0; // TODO reg.pos=reg.exp=0;
 
@@ -1324,35 +1324,53 @@ DEBUGF("INIT\n");
 #if defined(USBBOOT)
    state.usbboot[i] = eeprom_read_byte((uint8_t*)0x50+i);
 #endif
+
+#if defined(GPIOD)
+# if defined(ENP1PORT) && defined(ENP1PIN)
+   if((state.enp[0]>>0)&0x01) {
+    // Turn on P1
+    ENP1PORT |= (1<<ENP1PIN);
+    // Is P1LED is enabled
+#  if defined(LEDP1PORT) && defined(LEDP1PIN)
+    if((state.enpled[0]>>0)&0x01) {
+     LEDP1PORT |= (1<<LEDP1PIN);
+    }
+#  endif
+   }
+# endif // P1
+# if defined(ENP2PORT) && defined(ENP2PIN)
+   if((state.enp[0]>>1)&0x01) {
+    // Turn on P2
+    ENP2PORT |= (1<<ENP2PIN);
+    // Is P2LED is enabled
+#  if defined(LEDP2PORT) && defined(LEDP2PIN)
+    if((state.enpled[0]>>1)&0x01) {
+     LEDP2PORT |= (1<<LEDP2PIN);
+    }
+#  endif
+   }
+# endif // P2
+#elif defined(GPIOA)
    for(tmpu8=0;tmpu8<8;tmpu8++) { // Loop through each bit
     if( ((i*8)+tmpu8)<CTRL_MAXPI ) {
      if( ((state.enp[i]>>tmpu8)&0x1) ) { // Px is enabled
-#if defined(GPIOCTRL)
       (*p[((i*8)+tmpu8)][0]) |= (1 << (int)p[((i*8)+tmpu8)][1]);
-#endif
       // Is LEDPx enabled?
       if( ((state.enpled[i]>>tmpu8)&0x1) ) { // PxLED is enabled
-#if defined(GPIOCTRL)
        (*pled[((i*8)+tmpu8)][0]) |= (1<< (int)pled[((i*8)+tmpu8)][1]);
-#endif
       }
      }
-
-#if defined(USBBOOT)
+# if defined(USBBOOT)
      if( ((state.usbboot[i]>>tmpu8)&0x1) ) { // PxUSBBOOT is enabled
-#if defined(GPIOCTRL)
       (*usbboot[((i*8)+tmpu8)][0]) |= (1 << (int)usbboot[((i*8)+tmpu8)][1]);
-#else
-#error Non-GPIO and USBBOOT not supported
-#endif
      }
-#endif
-
+# endif
     }
    }
+#endif
   }
 
-#if defined(DTA)
+#if defined(GPIOE)
   chdta_init();
 #endif
 
@@ -1381,7 +1399,32 @@ DEBUGF("INIT\n");
       DEBUGF("##ON %d\n", reg.data0);
       if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
        DEBUGF("P%d ON\n", reg.data0);
-#if defined(GPIOCTRL)
+#if defined(GPIOD)
+# if defined(ENP1PORT) && defined(ENP1PIN)
+       if(reg.data0==1) {
+        ENP1PORT |= (1<<ENP1PIN);
+        state.enp[0] |= 1<<0;
+        // If P1LED is enabled turn it on
+#  if defined(LEDP1PORT) && defined(LEDP1PIN)
+        if((state.enpled[0]>>0)&0x01) {
+         LEDP1PORT |= (1<<LEDP1PIN);
+        }
+#  endif
+       }
+# endif
+# if defined(ENP2PORT) && defined(ENP2PIN)
+       if(reg.data0==2) {
+        ENP2PORT |= (1<<ENP2PIN);
+        state.enp[0] |= 1<<1;
+        // If P2LED is enabled turn it on
+#  if defined(LEDP2PORT) && defined(LEDP2PIN)
+        if((state.enpled[0]>>1)&0x01) {
+         LEDP2PORT |= (1<<LEDP2PIN);
+        }
+#  endif
+       }
+# endif
+#elif defined(GPIOA)
        // Turn on Px
        (*p[reg.data0-1][0]) |= 1<< (int)p[reg.data0-1][1];
        // Update state
@@ -1390,7 +1433,7 @@ DEBUGF("INIT\n");
        if( state.enpled[ P2BYTE(reg.data0-1) ]&(1<<P2BIT(reg.data0-1)) ) {
         (*pled[reg.data0-1][0]) |= 1<< (int)pled[reg.data0-1][1];
        }
-#elif defined(DTA)
+#elif defined(GPIOE)
        reg.data0--;
        if(chdta_status[reg.data0/4].chat==1) {
         // Switch MUX
@@ -1406,14 +1449,35 @@ DEBUGF("INIT\n");
       DEBUGF("##OFF %d\n", reg.data0);
       if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
        DEBUGF("P%d OFF\n", reg.data0);
-#if defined(GPIOCTRL)
+#if defined(GPIOD)
+# if defined(ENP1PORT) && defined(ENP1PIN)
+       // Turn P1 power off
+       ENP1PORT &= ~(1<<ENP1PIN);
+       // Update state
+       state.enp[0] &= ~(1<<0);
+       // Turn LED off
+#  if defined(LEDP1PORT) && defined(LEDP1PIN)
+       LEDP1PORT &= ~(1<<LEDP1PIN);
+#  endif
+# endif // P1
+# if defined(ENP2PORT) && defined(ENP2PIN)
+       // Turn P2 power off
+       ENP2PORT &= ~(1<<ENP2PIN);
+       // Update state
+       state.enp[0] &= ~(1<<1);
+       // Turn LED off
+#  if defined(LEDP2PORT) && defined(LEDP2PIN)
+       LEDP2PORT &= ~(1<<LEDP2PIN);
+#  endif
+# endif // P2
+#elif defined(GPIOA)
        // Turn power off
        (*p[reg.data0-1][0]) &= ~(1 << (int)p[reg.data0-1][1]);
        // Update state
        state.enp[ P2BYTE(reg.data0-1) ] &= ~(1<< P2BIT(reg.data0-1));
        // Turn PxLED off
        (*pled[reg.data0-1][0]) &= ~(1 << (int)pled[reg.data0-1][1]);
-#elif defined(DTA)
+#elif defined(GPIOE)
        reg.data0--;
        if(chdta_status[reg.data0/4].chat==1) {
         // Switch MUX
@@ -1430,7 +1494,22 @@ DEBUGF("INIT\n");
       DEBUGF("##USBBOOT ON %d\n", reg.data0);
       if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
        DEBUGF("P%d ON\n", reg.data0);
+# if defined(GPIOD)
+#  if defined(USBBOOTP1PORT) && defined(USBBOOTP1PIN)
+       if(reg.data0==1) {
+        USBBOOTP1PORT |= (1<<USBBOOTP1PIN);
+        state.usbboot[0] |= (1<<0);
+       }
+#  endif
+#  if defined(USBBOOTP2PORT) && defined(USBBOOTP2PIN)
+       if(reg.data0==2) {
+        USBBOOTP2PORT |= (1<<USBBOOTP2PIN);
+        state.usbboot[0] |= (1<<1);
+       }
+#  endif
+# elif defined(GPIOA)
        (*usbboot[reg.data0-1][0]) |= 1<< (int)usbboot[reg.data0-1][1];
+# endif
        state.usbboot[ (P2BYTE(reg.data0-1)) ] |= (1<<P2BIT(reg.data0-1));
       }
       reg.cmd=0; // DONE
@@ -1439,7 +1518,22 @@ DEBUGF("INIT\n");
       DEBUGF("##USBBOOT OFF %d\n", reg.data0);
       if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
        DEBUGF("P%d OFF\n", reg.data0);
+# if defined(GPIOD)
+#  if defined(USBBOOTP1PORT) && defined(USBBOOTP1PIN)
+       if(reg.data0==1) {
+        USBBOOTP1PORT &= ~(1<<USBBOOTP1PIN);
+        state.usbboot[0] &= ~(1<<0);
+       }
+#  endif
+#  if defined(USBBOOTP2PORT) && defined(USBBOOTP2PIN)
+      if(reg.data0==2) {
+       USBBOOTP2PORT &= ~(1<<USBBOOTP2PIN);
+        state.usbboot[0] &= ~(1<<1);
+      }
+#  endif
+# elif defined(GPIOA)
        (*usbboot[reg.data0-1][0]) &= ~(1 << (int)usbboot[reg.data0-1][1]);
+# endif
        state.usbboot[ (P2BYTE(reg.data0-1)) ] &= ~(1<<P2BIT(reg.data0-1));
       }
       reg.cmd=0; // DONE
@@ -1451,19 +1545,47 @@ DEBUGF("INIT\n");
        state.enpwr=1;
        LEDPWRPORT |= (1<<LEDPWRPIN);
        // Enable PxLED and turn on if Px is on
+#if defined(GPIOD)
+# if defined(ENP1PORT) && defined(ENP1PIN)
+        ENP1PORT |= (1<<ENP1PIN);
+#  if defined(LEDP1PORT) && defined(LEDP1PIN)
+        LEDP1PORT |= (1<<LEDP1PIN);
+#  endif
+# endif
+# if defined(ENP2PORT) && defined(ENP2PIN)
+        ENP2PORT |= (1<<ENP2PIN);
+#  if defined(LEDP2PORT) && defined(LEDP2PIN)
+        LEDP2PORT |= (1<<LEDP2PIN);
+#  endif
+# endif
+        state.enp[0] = 0xFF; // Just set all bits
+        state.enpled[0] = 0xFF;
+#elif defined(GPIOA)
        for(tmpu8=1;tmpu8<=CTRL_MAXPI;tmpu8++) {
         state.enpled[ (P2BYTE(tmpu8-1)) ] |= (1<<P2BIT(tmpu8-1));
-#if defined(GPIOCTRL)
         if( state.enp[ (P2BYTE(tmpu8-1)) ]&(1<<P2BIT(tmpu8-1)) ) {
          (*pled[tmpu8-1][0]) |= 1<< (int)pled[tmpu8-1][1];
         }
-#endif
        }
+#endif
       } else if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
        DEBUGF("Enable LED for P%d\n", reg.data0);
-       state.enpled[ (P2BYTE(reg.data0-1)) ] |= (1<<P2BIT(reg.data0-1));
        // If Px is on turn the LED on
-#if defined(GPIOCTRL)
+#if defined(GPIOD)
+# if defined(LEDP1PORT) && defined(LEDP1PIN)
+        if( (state.enp[0]>>0)&0x1 && reg.data0==1) {
+         LEDP1PORT |= (1<<LEDP1PIN);
+         state.enpled[0] |= (1<<0);
+        }
+# endif
+# if defined(LEDP2PORT) && defined(LEDP2PIN)
+        if( (state.enp[0]>>1)&0x1 && reg.data0==2) {
+         LEDP2PORT |= (1<<LEDP2PIN);
+         state.enpled[0] |= (1<<1);
+        }
+# endif
+#elif defined(GPIOA)
+       state.enpled[ (P2BYTE(reg.data0-1)) ] |= (1<<P2BIT(reg.data0-1));
        if( state.enp[ (P2BYTE(reg.data0-1)) ]&(1<<P2BIT(reg.data0-1)) ) {
         (*pled[reg.data0-1][0]) |= 1<< (int)pled[reg.data0-1][1];
        }
@@ -1477,17 +1599,38 @@ DEBUGF("INIT\n");
          state.enpwr=0;
          LEDPWRPORT &= ~(1<<LEDPWRPIN);
          // Disable PxLED
+#if defined(GPIOD)
+# if defined(LEDP1PORT) && defined(LEDP1PIN)
+         LEDP1PORT &= ~(1<<LEDP1PIN);
+# endif
+# if defined(LEDP2PORT) && defined(LEDP2PIN)
+         LEDP2PORT &= ~(1<<LEDP2PIN);
+# endif
+         state.enpled[0] = 0x00;
+#elif defined(GPIOA)
          for(tmpu8=1;tmpu8<=CTRL_MAXPI;tmpu8++) {
           state.enpled[ (P2BYTE(tmpu8-1)) ] &= ~(1<<P2BIT(tmpu8-1));
-#if defined(GPIOCTRL)
           (*pled[tmpu8-1][0]) &= ~(1<< (int)pled[tmpu8-1][1]);
-#endif
          }
+#endif
         } else if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
          DEBUGF("Disable LED for P%d\n", reg.data0);
-         state.enpled[ (P2BYTE(reg.data0-1)) ] &= ~(1<<P2BIT(reg.data0-1));
          // Turn off Px LED
-#if defined(GPIOCTRL)
+#if defined(GPIOD)
+# if defined(LEDP1PORT) && defined(LEDP1PIN)
+        if(reg.data0==1) {
+         LEDP1PORT &= ~(1<<LEDP1PIN);
+         state.enpled[0] &= ~(1<<0);
+        }
+# endif
+# if defined(LEDP2PORT) && defined(LEDP2PIN)
+        if(reg.data0==2) {
+         LEDP2PORT &= ~(1<<LEDP2PIN);
+         state.enpled[0] &= ~(1<<1);
+        }
+# endif
+#elif defined(GPIOA)
+         state.enpled[ (P2BYTE(reg.data0-1)) ] &= ~(1<<P2BIT(reg.data0-1));
          (*pled[reg.data0-1][0]) &= ~(1<< (int)pled[reg.data0-1][1]);
 #endif
         }
@@ -1596,9 +1739,20 @@ DEBUGF("INIT\n");
      } else if (reg.cmd==I2C_CMD_GET_PSTATUS) { // Get power status
 	DEBUGF("\n\nGet power status %d\n", reg.data0);
         if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
-#if defined(GPIOCTRL)
+#if defined(GPIOD)
+# if defined(LEDP1PORT) && defined(LEDP1PIN)
+         if(reg.data0==1) {
+          reg.data0=((state.enp[0]>>0)&0x01);
+         }
+# endif
+# if defined(LEDP2PORT) && defined(LEDP2PIN)
+         if(reg.data0==2) {
+          reg.data0=((state.enp[0]>>1)&0x01);
+         }
+# endif
+#elif defined(GPIOA)
 	 reg.data0 = (((*pled[reg.data0-1][0]) >> (int)pled[reg.data0-1][1])&0x1);
-#elif defined(DTA)
+#elif defined(GPIOE)
          reg.data0--;
          if(chdta_status[reg.data0/4].chat==1) {
           // Switch MUX
@@ -1623,7 +1777,20 @@ DEBUGF("INIT\n");
 #if defined(USBBOOT)
       DEBUGF("\n\nGet USBBOOT status %d\n", reg.data0);
       if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
+# if defined(GPIOD)
+#  if defined(USBBOOTP1PORT) && defined(USBBOOTP1PIN)
+      if(reg.data0==1) {
+       reg.data0=((state.usbboot[0]>>0)&0x01);
+      }
+#  endif
+#  if defined(USBBOOTP2PORT) && defined(USBBOOTP2PIN)
+      if(reg.data0==2) {
+       reg.data0=((state.usbboot[0]>>1)&0x01);
+      }
+#  endif
+# elif defined(GPIOA)
        reg.data0 = (((*usbboot[reg.data0-1][0]) >> (int)usbboot[reg.data0-1][1])&0x1);
+# endif
        reg.cmd=0; // DONE
        reg.status=0x00; // No error
       } else {

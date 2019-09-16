@@ -7,6 +7,10 @@
 
 # define CTRL_TYPE       0x03 // 0x00=Cluster DA, 0x01=Cluster pHAT ...
 
+# define GPIOA // Use GPIO array for LED/Px
+# undef GPIOD // Use GPIO defines for LED/Px
+# undef GPIOE // Use I2C I/O expander
+
 # define LEDPWRPORT PORTB
 # define LEDPWRPIN  PB0
 # define LEDALERTPORT PORTB
@@ -47,8 +51,7 @@
 // Data for paths to USB devices
 
 extern const unsigned char paths[CTRL_MAXPI+1][8];
-# define GPIOCTRL // Use GPIO for LED/Px
-# undef I2CCTRL // Use I2C for LED/Px
+
 volatile uint8_t *pled[CTRL_MAXPI][2];
 volatile uint8_t *p[CTRL_MAXPI][2];
 

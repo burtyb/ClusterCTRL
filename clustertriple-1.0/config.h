@@ -7,6 +7,10 @@
 
 # define CTRL_TYPE       0x01 // 0x00=Cluster DA, 0x01=Cluster pHAT ...
 
+# define GPIOA // Use GPIO array for LED/Px
+# undef GPIOD // Use GPIO defines for LED/Px
+# undef GPIOE // Use I2C I/O expander
+
 # define LEDPWRPORT PORTD
 # define LEDPWRPIN  PD4
 # define LEDALERTPORT PORTD
@@ -31,8 +35,6 @@
 # define ADC1   	6 // 5V/2
 # define ADC1TYPE	1 // Type 1 = 3v3 reference, sample divided by 2
 # define ADCTEMP	2 // AVR supports getting internal temp
-
-# define GPIOCTRL // Use GPIO for LED/Px
 
 // Data for paths to USB devices
 extern const unsigned char paths[CTRL_MAXPI+1][8];
