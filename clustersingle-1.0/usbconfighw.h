@@ -11,7 +11,7 @@
 #define USB_INTR_PENDING_BIT            INTF1
 #define USB_INTR_VECTOR                 INT1_vect
 
-#define USB_CFG_DEVICE_ID               0x13, 0x00
+#define USB_CFG_DEVICE_ID               0x15, 0x00
 /* This is the ID of the device, low byte first. It is interpreted in the
  * scope of the vendor ID. The only requirement is that no two devices may
  * share the same product and vendor IDs. Not even if the devices are never
