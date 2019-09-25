@@ -1461,24 +1461,28 @@ DEBUGF("INIT\n");
        DEBUGF("P%d OFF\n", reg.data0);
 #if defined(GPIOD)
 # if defined(ENP1PORT) && defined(ENP1PIN)
-       // Turn P1 power off
-       ENP1PORT &= ~(1<<ENP1PIN);
-       // Update state
-       state.enp[0] &= ~(1<<0);
-       // Turn LED off
+       if(reg.data0==1) {
+        // Turn P1 power off
+        ENP1PORT &= ~(1<<ENP1PIN);
+        // Update state
+        state.enp[0] &= ~(1<<0);
+        // Turn LED off
 #  if defined(LEDP1PORT) && defined(LEDP1PIN)
-       LEDP1PORT &= ~(1<<LEDP1PIN);
+        LEDP1PORT &= ~(1<<LEDP1PIN);
 #  endif
+       }
 # endif // P1
 # if defined(ENP2PORT) && defined(ENP2PIN)
-       // Turn P2 power off
-       ENP2PORT &= ~(1<<ENP2PIN);
-       // Update state
-       state.enp[0] &= ~(1<<1);
-       // Turn LED off
+       if(reg.data0==2) {
+        // Turn P2 power off
+        ENP2PORT &= ~(1<<ENP2PIN);
+        // Update state
+        state.enp[0] &= ~(1<<1);
+        // Turn LED off
 #  if defined(LEDP2PORT) && defined(LEDP2PIN)
-       LEDP2PORT &= ~(1<<LEDP2PIN);
+        LEDP2PORT &= ~(1<<LEDP2PIN);
 #  endif
+       }
 # endif // P2
 #elif defined(GPIOA)
        // Turn power off
