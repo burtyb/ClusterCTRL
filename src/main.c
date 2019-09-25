@@ -1350,6 +1350,16 @@ DEBUGF("INIT\n");
 #  endif
    }
 # endif // P2
+# if defined(USBBOOTP1PORT) && defined(USBBOOTP1PIN)
+   if( (state.usbboot[0]>>0)&0x1 ) {
+    USBBOOTP1PORT |= (1<<USBBOOTP1PIN);
+   }
+# endif
+# if defined(USBBOOTP2PORT) && defined(USBBOOTP2PIN)
+   if( (state.usbboot[0]>>1)&0x1 ) {
+    USBBOOTP2PORT |= (1<<USBBOOTP2PIN);
+   }
+# endif
 #elif defined(GPIOA)
    for(tmpu8=0;tmpu8<8;tmpu8++) { // Loop through each bit
     if( ((i*8)+tmpu8)<CTRL_MAXPI ) {

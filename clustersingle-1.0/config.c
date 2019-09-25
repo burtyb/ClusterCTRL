@@ -18,9 +18,3 @@ volatile uint8_t *p[CTRL_MAXPI+1][2] = {
 	{ 0,0 },
         { &PORTD, (uint8_t *)PD0 }, // P1
 };
-
-volatile uint8_t *usbboot[CTRL_MAXPI+1][2] = {
-        // PORT, PIN
-	{ 0,0 },
-        { &PORTD, (uint8_t *)PD1 }, // P1
-};
