@@ -1,5 +1,5 @@
 # clusterctrl
-Firmware for USB Cluster CTRL devices (Triple/A+6/Desktop Adaptor/pHAT).
+Firmware for USB Cluster CTRL devices (Triple/Single/A+6/Desktop Adaptor/pHAT).
 
 # Origins
 
