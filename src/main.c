@@ -4,7 +4,7 @@
  * Author: Chris Burton (Cluster CTRL)
  * Tabsize: 4
  * Copyright: (c) 2005 by Till Harbaum <till@harbaum.org>
- * Copyright: (c) 2019 by Chris Burton <chris@8086.net>
+ * Copyright: (c) 2019-2020 by Chris Burton <chris@8086.net>
  * License: GPL
  */
 
@@ -1366,9 +1366,11 @@ DEBUGF("INIT\n");
      if( ((state.enp[i]>>tmpu8)&0x1) ) { // Px is enabled
       (*p[((i*8)+tmpu8)][0]) |= (1 << (int)p[((i*8)+tmpu8)][1]);
       // Is LEDPx enabled?
+# if !defined(NOPLED)
       if( ((state.enpled[i]>>tmpu8)&0x1) ) { // PxLED is enabled
        (*pled[((i*8)+tmpu8)][0]) |= (1<< (int)pled[((i*8)+tmpu8)][1]);
       }
+# endif
      }
 # if defined(USBBOOT)
      if( ((state.usbboot[i]>>tmpu8)&0x1) ) { // PxUSBBOOT is enabled
@@ -1405,6 +1407,8 @@ DEBUGF("INIT\n");
     usbPoll();
 
     if(reg.cmd != 0) {
+     DEBUGF("## COMMAND %d\n", reg.cmd);
+     DEBUGF("## DATA0 %d %d %d %d\n", reg.data0, reg.data1, reg.data2, reg.data3);
      if(reg.cmd==I2C_CMD_ON) { // Turn Pi Zero on
       DEBUGF("##ON %d\n", reg.data0);
       if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
@@ -1440,9 +1444,11 @@ DEBUGF("INIT\n");
        // Update state
        state.enp[ P2BYTE(reg.data0-1) ] |= 1<< P2BIT(reg.data0-1);
        // If PxLED is enabled turn it on
+# if !defined(NOPLED)
        if( state.enpled[ P2BYTE(reg.data0-1) ]&(1<<P2BIT(reg.data0-1)) ) {
         (*pled[reg.data0-1][0]) |= 1<< (int)pled[reg.data0-1][1];
        }
+# endif
 #elif defined(GPIOE)
        reg.data0--;
        if(chdta_status[reg.data0/4].chat==1) {
@@ -1490,7 +1496,9 @@ DEBUGF("INIT\n");
        // Update state
        state.enp[ P2BYTE(reg.data0-1) ] &= ~(1<< P2BIT(reg.data0-1));
        // Turn PxLED off
+# if !defined(NOPLED)
        (*pled[reg.data0-1][0]) &= ~(1 << (int)pled[reg.data0-1][1]);
+# endif
 #elif defined(GPIOE)
        reg.data0--;
        if(chdta_status[reg.data0/4].chat==1) {
@@ -1577,9 +1585,11 @@ DEBUGF("INIT\n");
 #elif defined(GPIOA)
        for(tmpu8=1;tmpu8<=CTRL_MAXPI;tmpu8++) {
         state.enpled[ (P2BYTE(tmpu8-1)) ] |= (1<<P2BIT(tmpu8-1));
+# if !defined(NOPLED)
         if( state.enp[ (P2BYTE(tmpu8-1)) ]&(1<<P2BIT(tmpu8-1)) ) {
          (*pled[tmpu8-1][0]) |= 1<< (int)pled[tmpu8-1][1];
         }
+# endif
        }
 #endif
       } else if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
@@ -1600,9 +1610,11 @@ DEBUGF("INIT\n");
 # endif
 #elif defined(GPIOA)
        state.enpled[ (P2BYTE(reg.data0-1)) ] |= (1<<P2BIT(reg.data0-1));
+# if !defined(NOPLED)
        if( state.enp[ (P2BYTE(reg.data0-1)) ]&(1<<P2BIT(reg.data0-1)) ) {
         (*pled[reg.data0-1][0]) |= 1<< (int)pled[reg.data0-1][1];
        }
+# endif
 #endif
       }
       reg.cmd=0; // DONE
@@ -1624,7 +1636,9 @@ DEBUGF("INIT\n");
 #elif defined(GPIOA)
          for(tmpu8=1;tmpu8<=CTRL_MAXPI;tmpu8++) {
           state.enpled[ (P2BYTE(tmpu8-1)) ] &= ~(1<<P2BIT(tmpu8-1));
+# if !defined(NOPLED)
           (*pled[tmpu8-1][0]) &= ~(1<< (int)pled[tmpu8-1][1]);
+# endif
          }
 #endif
         } else if(reg.data0>0&&reg.data0<=CTRL_MAXPI) {
@@ -1645,7 +1659,9 @@ DEBUGF("INIT\n");
 # endif
 #elif defined(GPIOA)
          state.enpled[ (P2BYTE(reg.data0-1)) ] &= ~(1<<P2BIT(reg.data0-1));
+# if !defined(NOPLED)
          (*pled[reg.data0-1][0]) &= ~(1<< (int)pled[reg.data0-1][1]);
+# endif
 #endif
         }
         reg.cmd=0; // DONE
@@ -1659,7 +1675,9 @@ DEBUGF("INIT\n");
 	reg.status=0x0; // No error
      } else if (reg.cmd==I2C_CMD_ALERT_OFF) { // Alert off
 	DEBUGF("Alert off\n");
+#if defined(LEDALERTPORT) && defined(LEDALERTPIN)
 	LEDALERTPORT &= ~(1<<LEDALERTPIN);
+#endif
 	reg.cmd=0; // DONE
 	reg.status=0x0; // No error
      } else if (reg.cmd==I2C_CMD_SAVE) { // Save state
@@ -1765,7 +1783,7 @@ DEBUGF("INIT\n");
          }
 # endif
 #elif defined(GPIOA)
-	 reg.data0 = (((*pled[reg.data0-1][0]) >> (int)pled[reg.data0-1][1])&0x1);
+	 reg.data0 = (((*p[reg.data0-1][0]) >> (int)p[reg.data0-1][1])&0x1);
 #elif defined(GPIOE)
          reg.data0--;
          if(chdta_status[reg.data0/4].chat==1) {
@@ -1921,11 +1939,14 @@ DEBUGF("INIT\n");
       reg.cmd=0; // DONE
      } else if (reg.cmd==I2C_CMD_GETPATH) { // Get USB path to Px (data0=x or 0=controller)
 	tmpu8 = reg.data0;
+#if !defined(NOPATHS)
 	if(tmpu8>CTRL_MAXPI) { // Does data exist for this entry?
+#endif
 	 reg.cmd=0; // DONE
 	 reg.data0 = reg.data1 = reg.data2 = reg.data3 = \
 	 reg.data4 = reg.data5 = reg.data6 = reg.data7 = 255;
 	 reg.status=0x01; // Error
+#if !defined(NOPATHS)
 	} else {
 	 reg.data0 = paths[tmpu8][7];
 	 reg.data1 = paths[tmpu8][6];
@@ -1938,6 +1959,7 @@ DEBUGF("INIT\n");
 	 reg.cmd=0; // DONE
 	 reg.status=0x00; // No error
 	}
+#endif
      } else { // Unknown command
 	DEBUGF("Unknown command\n");
 	reg.cmd=0; // DONE
