@@ -369,7 +369,7 @@ struct chdta_data {
 #define STATUSE_GOTADDR 	2
 #define CTRL_VERSION    	0x02    // Version of the struct
 #define VERSION_MAJOR   	0x01    // Major version
-#define VERSION_MINOR   	0x03    // Minor version
+#define VERSION_MINOR   	0x04    // Minor version
 
 uchar emulated_status = STATUSE_NEEDADDR;
 uchar emulated_address = 0;
