@@ -193,7 +193,7 @@ static void i2c_io_set_scl(uchar hi) {
 
 static void i2c_init(void) {
 # if defined(DEBUGI2C)
-  DEBUGF("INIT\n");
+  DEBUGF("INIT I2C\n");
 # endif
   /* init the sda/scl pins */
   I2C_DDR &= ~I2C_SDA;            // port is input
@@ -380,7 +380,7 @@ struct i2creg {
   /* 0x01 ro */ uchar maxpi; 	// Max number of Pi Zero supported (2=pHAT, 16=half DA, 32=full DA, etc).
   /* 0x02 rw */ uchar order;	// Order number (used to sort multiple controllers)
   /* 0x03 rw */ uchar mode;	// Hole mode (Unused)
-  /* 0x04 ro    uchar type;	*/ // 0x00=Cluster DA, 0x01=Cluster Triple, 0x02=Cluster pHAT, 0x03=A+6
+  /* 0x04 ro    uchar type;	*/ // 0x00=ClusterCTRL DA, 0x01=ClusterCTRL Triple, 0x02=ClusterCTRL pHAT, 0x03=ClusterCTRL A+6, 0x04=ClusterCTRL Stack
   /* 0x05 rw */ uchar data7;    // Optional data byte for command
   /* 0x06 rw */ uchar data6;    // Optional data byte for command
   /* 0x07 rw */ uchar data5;    // Optional data byte for command
@@ -1231,9 +1231,13 @@ int	main(void) {
   stdout = &mystdout;
 #endif
 
+#if defined(FANSTATUS)
+ fanstatus=0;
+#endif
+
 DEBUGF("INIT\n");
 
-/* Set ports as outputs */
+/* Set ports as input/output */
 #if defined(DDRBINIT)
   DDRB |= DDRBINIT;
 #endif
@@ -1340,6 +1344,9 @@ DEBUGF("INIT\n");
 # endif // P1
 # if defined(ENP2PORT) && defined(ENP2PIN)
    if((state.enp[0]>>1)&0x01) {
+#  if defined(AUTOONDELAY)
+   _delay_ms(AUTOONDELAY);
+#  endif
     // Turn on P2
     ENP2PORT |= (1<<ENP2PIN);
     // Is P2LED is enabled
@@ -1364,6 +1371,9 @@ DEBUGF("INIT\n");
    for(tmpu8=0;tmpu8<8;tmpu8++) { // Loop through each bit
     if( ((i*8)+tmpu8)<CTRL_MAXPI ) {
      if( ((state.enp[i]>>tmpu8)&0x1) ) { // Px is enabled
+# if defined(AUTOONDELAY)
+     if (tmpu8>0) _delay_ms(AUTOONDELAY);
+# endif
       (*p[((i*8)+tmpu8)][0]) |= (1 << (int)p[((i*8)+tmpu8)][1]);
       // Is LEDPx enabled?
 # if !defined(NOPLED)
@@ -1833,8 +1843,12 @@ DEBUGF("INIT\n");
 #endif
       reg.cmd=0; // DONE
       reg.status=0x00; // No error
-#if defined (FANENPORT) && defined (FANENPIN)
+#if ( defined (FANENPORT) && defined (FANENPIN) ) || defined(FANSTATUS)
      } else if (reg.cmd==I2C_CMD_FAN) { // Turn fan on/off
+# if defined (FANSTATUS)
+        fanstatus=reg.data0;
+# endif
+# if  defined (FANENPORT) && defined (FANENPIN)
 	if(reg.data0==1) { // Turn on
 		DEBUGF("FAN ON %d\n", FANENPORT);
 		FANENPORT |= (1<<FANENPIN);
@@ -1844,6 +1858,7 @@ DEBUGF("INIT\n");
 		FANENPORT &= ~(1<<FANENPIN);
 		DEBUGF("FAN OFF done %d\n", FANENPORT);
 	}
+# endif
 	reg.cmd=0; // DONE
 	reg.status=0x00; // No error
 #endif
@@ -1966,6 +1981,10 @@ DEBUGF("INIT\n");
 	reg.status=0x03; // Error unknown command
      }
     }
+
+#ifdef LOOP_CALL // Custom function defined in config.h/c if needed
+    loop_call();
+#endif
   }
 
   return 0;
