@@ -88,6 +88,9 @@ program: firmware.hex
 	$(error Failed to program unknown device with ID $(PID) )
 endif
 
+program-atmelice:
+	avrdude -c atmelice_isp  -p atmega328pb -U lfuse:w:0xff:m -U flash:w:firmware.hex -U hfuse:w:0xd0:m -U efuse:w:0xf5:m
+
 #program-usb: firmware.hex
 #	avrdude -P/dev/ttyUSB0 -c stk500hvsp -p atmega328p -U lfuse:w:0xdf:m -U flash:w:firmware.hex -U hfuse:w:0x5f:m
 

@@ -78,6 +78,9 @@ program: firmware.hex
 program-avrft234: firmware.hex
 	avrdude -B 200 -c avrft234 -p atmega328p -U lfuse:w:0xff:m -U flash:w:firmware.hex -U hfuse:w:0xd0:m -U efuse:w:0xfd:m
 
+program-atmelice:
+	avrdude -c atmelice_isp  -p atmega328p -U lfuse:w:0xff:m -U flash:w:firmware.hex -U hfuse:w:0xd0:m -U efuse:w:0xfd:m
+
 disasm:	firmware.bin
 	avr-objdump -d firmware.bin
 
