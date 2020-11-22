@@ -26,3 +26,15 @@ void loop_call( void ) {
 		PORTC &= ~(1<<PC1); // Turn fan2 off
 	}
 }
+
+uint8_t get_fanstatus( void ) {
+	uint8_t data = 0;
+	data |= ((PINB & (1<<PINB0))>>PINB0)<<0; // Status P1 requested cooling
+	data |= ((PINB & (1<<PINB1))>>PINB1)<<1; // Status P2 requested cooling
+	data |= ((PIND & (1<<PIND6))>>PIND6)<<2; // Status P3 requested cooling
+	data |= ((PIND & (1<<PIND7))>>PIND7)<<3; // Status P4 requested cooling
+	data |= ((PIND & (1<<PIND4))>>PIND4)<<4; // Status P5 requested cooling
+	data |= ((PIND & (1<<PIND5))>>PIND5)<<5; // Status <spare> requested cooling
+	
+	return data;
+}

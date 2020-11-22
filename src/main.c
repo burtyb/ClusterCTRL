@@ -49,6 +49,8 @@ struct {
 #endif
 } state;
 
+unsigned char fanstatus=0;
+
 #if defined(UARTDEBUG) && defined(DEBUG)
 #define DEBUGF(format, args...) printf_P(PSTR(format), ##args)
 
@@ -369,7 +371,7 @@ struct chdta_data {
 #define STATUSE_GOTADDR 	2
 #define CTRL_VERSION    	0x02    // Version of the struct
 #define VERSION_MAJOR   	0x01    // Major version
-#define VERSION_MINOR   	0x04    // Minor version
+#define VERSION_MINOR   	0x06    // Minor version
 
 uchar emulated_status = STATUSE_NEEDADDR;
 uchar emulated_address = 0;
@@ -430,6 +432,12 @@ struct i2creg {
 #define I2C_CMD_SAVEUSBBOOT	0xF4 // Write only USBBOOT settings to EEPROM
 #define I2C_CMD_SAVEPOS		0xF5 // Write only Power On State to EEPROM
 #define I2C_CMD_SAVELED		0xF6 // Write only LED states to EEPROM
+
+#define GET_DATA_VERSION        0x00 // Get firmware version
+#define GET_DATA_ADC_CNT        0x01 // Returns number of ADC ClusterCTRL supports
+#define GET_DATA_ADC_READ       0x02 // Read ADC data for ADC number 'data0'
+#define GET_DATA_ADC_TEMP       0x03 // Read Temperature ADC
+#define GET_DATA_FANSTATUS      0x04 // Read fan status
 
 /* Read register 0x0e - 0x00 means idle (otherwise returns pending command) */
 
@@ -1231,10 +1239,6 @@ int	main(void) {
   stdout = &mystdout;
 #endif
 
-#if defined(FANSTATUS)
- fanstatus=0;
-#endif
-
 DEBUGF("INIT\n");
 
 /* Set ports as input/output */
@@ -1332,6 +1336,9 @@ DEBUGF("INIT\n");
 #if defined(GPIOD)
 # if defined(ENP1PORT) && defined(ENP1PIN)
    if((state.enp[0]>>0)&0x01) {
+#  if defined(AUTOONDELAY)
+   _delay_ms(AUTOONDELAY);
+#  endif
     // Turn on P1
     ENP1PORT |= (1<<ENP1PIN);
     // Is P1LED is enabled
@@ -1372,7 +1379,7 @@ DEBUGF("INIT\n");
     if( ((i*8)+tmpu8)<CTRL_MAXPI ) {
      if( ((state.enp[i]>>tmpu8)&0x1) ) { // Px is enabled
 # if defined(AUTOONDELAY)
-     if (tmpu8>0) _delay_ms(AUTOONDELAY);
+     _delay_ms(AUTOONDELAY);
 # endif
       (*p[((i*8)+tmpu8)][0]) |= (1 << (int)p[((i*8)+tmpu8)][1]);
       // Is LEDPx enabled?
@@ -1845,9 +1852,6 @@ DEBUGF("INIT\n");
       reg.status=0x00; // No error
 #if ( defined (FANENPORT) && defined (FANENPIN) ) || defined(FANSTATUS)
      } else if (reg.cmd==I2C_CMD_FAN) { // Turn fan on/off
-# if defined (FANSTATUS)
-        fanstatus=reg.data0;
-# endif
 # if  defined (FANENPORT) && defined (FANENPIN)
 	if(reg.data0==1) { // Turn on
 		DEBUGF("FAN ON %d\n", FANENPORT);
@@ -1859,13 +1863,14 @@ DEBUGF("INIT\n");
 		DEBUGF("FAN OFF done %d\n", FANENPORT);
 	}
 # endif
+	fanstatus=reg.data0;
 	reg.cmd=0; // DONE
 	reg.status=0x00; // No error
 #endif
      } else if (reg.cmd==I2C_CMD_GETDATA) {
       reg.status=0x01; // (fallback) Unsupported
       DEBUGF("GETDATA\n");
-      if(reg.data0==0) { // Get version
+      if(reg.data0==GET_DATA_VERSION) { // Get version
        DEBUGF("- Version\n");
        reg.data0=VERSION_MINOR;
        reg.data1=VERSION_MAJOR;
@@ -1876,7 +1881,7 @@ DEBUGF("INIT\n");
        reg.data6=0xFF;
        reg.data7=0xFF;
        reg.status=0x00; // No error
-      } else if(reg.data0==1) { // Get number of ADC
+      } else if(reg.data0==GET_DATA_ADC_CNT) { // Get number of ADC
        DEBUGF("- Number of ADC\n");
        reg.data0 = 0;
 #if defined(ADC1)
@@ -1886,7 +1891,7 @@ DEBUGF("INIT\n");
 # endif
 #endif
        reg.status=0x00; // No error
-      } else if(reg.data0==2) { // Read ADC #reg.data1
+      } else if(reg.data0==GET_DATA_ADC_READ) { // Read ADC #reg.data1
        DEBUGF("- Read ADC %d\n", reg.data1);
 #if defined(ADC1)
        if(reg.data1==1) {
@@ -1922,7 +1927,7 @@ DEBUGF("INIT\n");
         reg.status=0x00; // No error
        }
 #endif
-      } else if(reg.data0==3) { // Read Temp
+      } else if(reg.data0==GET_DATA_ADC_TEMP) { // Read Temp
 #if defined(ADCTEMP)
        DEBUGF("- Temp\n");
        adc_init();
@@ -1941,6 +1946,13 @@ DEBUGF("INIT\n");
        reg.status=0x00; // No error
        adc_init(); // Set ADC back to normal ready for the next read
 #endif
+      } else if(reg.data0==GET_DATA_FANSTATUS) { // Get fanstatus
+#if defined(GET_FANSTATUS)
+       reg.data0 = fanstatus | (get_fanstatus()<<1);
+#else
+       reg.data0 = fanstatus;
+#endif
+       reg.status=0x00; // No error
       }
       reg.cmd=0; // DONE
      } else if (reg.cmd==I2C_CMD_SET_ORDER) { // Set "order"

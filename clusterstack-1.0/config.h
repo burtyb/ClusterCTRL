@@ -51,4 +51,8 @@ volatile uint8_t *p[CTRL_MAXPI][2];
 #define LOOP_CALL
 void loop_call( void );
 
+// Custom function to get fan status (bitfield of requests from P1-P5)
+#define GET_FANSTATUS
+uint8_t get_fanstatus( void );
+
 #endif
