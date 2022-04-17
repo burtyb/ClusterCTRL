@@ -79,9 +79,17 @@ program: firmware.hex
 	$(MAKE) program PID=$(PID)
 else ifeq ($(PID),0x1e9516)
 program: firmware.hex
+# Fuses ATmega328pb
+# EXTENDED 0xf5 
+#     HIGH 0xd0
+#      LOW 0xff
 	avrdude -c $(PROGRAMMER) -p atmega328pb -U lfuse:w:0xff:m -U flash:w:firmware.hex -U hfuse:w:0xd0:m -U efuse:w:0xf5:m
 else ifeq ($(PID),0x1e950f)
 program: firmware.hex
+# Fuses ATmega328p
+# EXTENDED 0xfd
+#     HIGH 0xd0
+#      LOW 0xff
 	avrdude -c $(PROGRAMMER) -p atmega328p -U lfuse:w:0xff:m -U flash:w:firmware.hex -U hfuse:w:0xd0:m -U efuse:w:0xfd:m
 else
 program: firmware.hex

@@ -11,6 +11,8 @@
 # undef GPIOD // Use GPIO defines for LED/Px
 # undef GPIOE // Use I2C I/O expander
 
+#define AUTOONDELAY 1000 // ms to delay for Px auto power on
+
 # define LEDPWRPORT PORTB
 # define LEDPWRPIN  PB0
 # define LEDALERTPORT PORTB
