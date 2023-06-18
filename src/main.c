@@ -371,7 +371,7 @@ struct chdta_data {
 #define STATUSE_GOTADDR 	2
 #define CTRL_VERSION    	0x02    // Version of the struct
 #define VERSION_MAJOR   	0x01    // Major version
-#define VERSION_MINOR   	0x06    // Minor version
+#define VERSION_MINOR   	0x07    // Minor version
 
 uchar emulated_status = STATUSE_NEEDADDR;
 uchar emulated_address = 0;
@@ -1378,8 +1378,11 @@ DEBUGF("INIT\n");
    for(tmpu8=0;tmpu8<8;tmpu8++) { // Loop through each bit
     if( ((i*8)+tmpu8)<CTRL_MAXPI ) {
      if( ((state.enp[i]>>tmpu8)&0x1) ) { // Px is enabled
+# if defined(LEDALERTPORT) && defined(LEDALERTPIN)
+      LEDALERTPORT |= (1<<LEDALERTPIN);
+# endif
 # if defined(AUTOONDELAY)
-     _delay_ms(AUTOONDELAY);
+      _delay_ms(AUTOONDELAY);
 # endif
       (*p[((i*8)+tmpu8)][0]) |= (1 << (int)p[((i*8)+tmpu8)][1]);
       // Is LEDPx enabled?
@@ -1396,6 +1399,9 @@ DEBUGF("INIT\n");
 # endif
     }
    }
+# if defined(LEDALERTPORT) && defined(LEDALERTPIN)
+   LEDALERTPORT &= ~(1<<LEDALERTPIN);
+# endif
 #endif
   }
 
