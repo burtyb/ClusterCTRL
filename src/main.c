@@ -371,7 +371,7 @@ struct chdta_data {
 #define STATUSE_GOTADDR 	2
 #define CTRL_VERSION    	0x02    // Version of the struct
 #define VERSION_MAJOR   	0x01    // Major version
-#define VERSION_MINOR   	0x07    // Minor version
+#define VERSION_MINOR   	0x08    // Minor version
 
 uchar emulated_status = STATUSE_NEEDADDR;
 uchar emulated_address = 0;
@@ -424,6 +424,8 @@ struct i2creg {
 #define I2C_CMD_USBBOOT_DIS	0x13 // Turn off USBBOOT for Px (data0=x)
 #define I2C_CMD_GET_USTATUS	0x14 // Get USBBOOT status for Px (data0=x)
 #define I2C_CMD_SET_ORDER	0x15 // Set "order"
+#define I2C_CMD_ACT_EN		0x16 // Enable ACT LED
+#define I2C_CMD_ACT_DIS		0x17 // Disable ACT LED
 #define I2C_CMD_PING		0x90 // PING / NOP command
 #define I2C_CMD_SAVE		0xF0 // Save current order/LED/usbboot/Pi Zero state for power on (ALERT is always off on startup)
 #define I2C_CMD_SAVEDEFAULTS	0xF1 // Reset EEPROM to defaults
@@ -1315,14 +1317,8 @@ DEBUGF("INIT\n");
 
 #if defined(LEDACTPORT) && defined(LEDACTPIN)
   // Get the state of the ACT LED
-  tmpu8 = eeprom_read_byte((uint8_t*)0x03);
-  if(tmpu8==0x01) {
-   state.enact = 1; // Enable
-   LEDACTPORT &= ~(1<<LEDACTPIN); // Turn off
-  } else {
-   state.enact = 0; // Disable
-   LEDACTPORT &= ~(1<<LEDACTPIN); // Turn off
-  }
+  state.enact = eeprom_read_byte((uint8_t*)0x03);
+  LEDACTPORT &= ~(1<<LEDACTPIN); // Turn off
 #endif
 
   // Read Pxi, PxLED and PxUSBBOOT default states from EEPROM
@@ -1430,6 +1426,11 @@ DEBUGF("INIT\n");
     usbPoll();
 
     if(reg.cmd != 0) {
+#if defined(LEDACTPORT) && defined(LEDACTPIN)
+     if(state.enact) {
+      LEDACTPORT |= (1<<LEDACTPIN);
+     }
+#endif
      DEBUGF("## COMMAND %d\n", reg.cmd);
      DEBUGF("## DATA0 %d %d %d %d\n", reg.data0, reg.data1, reg.data2, reg.data3);
      if(reg.cmd==I2C_CMD_ON) { // Turn Pi Zero on
@@ -1970,6 +1971,16 @@ DEBUGF("INIT\n");
        reg.status=0x01; // Error ("order" below 1)
       }
       reg.cmd=0; // DONE
+#if defined(LEDACTPORT) && defined(LEDACTPIN)
+     } else if (reg.cmd==I2C_CMD_ACT_EN) { // Enable ACT LED
+	state.enact=1;
+	reg.cmd=0; // DONE
+	reg.status=0x0; // No error
+     } else if (reg.cmd==I2C_CMD_ACT_DIS) { // Enable ACT LED
+        state.enact=0;
+        reg.cmd=0; // DONE
+        reg.status=0x0; // No error
+#endif
      } else if (reg.cmd==I2C_CMD_GETPATH) { // Get USB path to Px (data0=x or 0=controller)
 	tmpu8 = reg.data0;
 #if !defined(NOPATHS)
@@ -1998,6 +2009,9 @@ DEBUGF("INIT\n");
 	reg.cmd=0; // DONE
 	reg.status=0x03; // Error unknown command
      }
+#if defined(LEDACTPORT) && defined(LEDACTPIN)
+     LEDACTPORT &= ~(1<<LEDACTPIN); // Turn ACT LED off
+#endif
     }
 
 #ifdef LOOP_CALL // Custom function defined in config.h/c if needed
