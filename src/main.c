@@ -1333,6 +1333,7 @@ DEBUGF("INIT\n");
 # if defined(ENP1PORT) && defined(ENP1PIN)
    if((state.enp[0]>>0)&0x01) {
 #  if defined(AUTOONDELAY)
+   wdt_reset();
    _delay_ms(AUTOONDELAY);
 #  endif
     // Turn on P1
@@ -1348,6 +1349,7 @@ DEBUGF("INIT\n");
 # if defined(ENP2PORT) && defined(ENP2PIN)
    if((state.enp[0]>>1)&0x01) {
 #  if defined(AUTOONDELAY)
+   wdt_reset();
    _delay_ms(AUTOONDELAY);
 #  endif
     // Turn on P2
@@ -1378,6 +1380,7 @@ DEBUGF("INIT\n");
       LEDALERTPORT |= (1<<LEDALERTPIN);
 # endif
 # if defined(AUTOONDELAY)
+      wdt_reset();
       _delay_ms(AUTOONDELAY);
 # endif
       (*p[((i*8)+tmpu8)][0]) |= (1 << (int)p[((i*8)+tmpu8)][1]);
