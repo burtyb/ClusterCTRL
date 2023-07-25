@@ -8,7 +8,7 @@ volatile uint8_t *p[CTRL_MAXPI][2] = {
         { &PORTC, (uint8_t *)PC3 }, // P2
 	{ &PORTC, (uint8_t *)PC4 }, // P3
 	{ &PORTC, (uint8_t *)PC5 }, // P4
-	{ &PORTB, (uint8_t *)PB2 }, // P4
+	{ &PORTB, (uint8_t *)PB2 }, // P5
 };
 
 void loop_call( void ) {
