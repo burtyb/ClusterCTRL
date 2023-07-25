@@ -61,7 +61,7 @@ clean:
 	rm -f firmware.hex firmware.lst firmware.obj firmware.cof firmware.list firmware.map *.bin *.o */*.o *~ */*~ firmware.s usbdrv/oddebug.s usbdrv/usbdrv.s 
 
 # file targets:
-firmware.bin:	$(OBJECTS)
+firmware.bin:	$(OBJECTS) config.h
 	$(COMPILE) -o firmware.bin $(OBJECTS)
 
 firmware.hex:	firmware.bin
