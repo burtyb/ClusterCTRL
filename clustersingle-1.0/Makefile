@@ -24,7 +24,7 @@ usbdrv/%.o: ../src/usbdrv/%.c | usbdrv
 %.o: ../src/%.c
 	$(COMPILE) -c $< -o $@
 
-config.o: config.c
+config.o: config.c config.h
 	$(COMPILE) -c config.c -o config.o
 
 usbdrv/%.o: ../src/usbdrv/%.S | usbdrv
@@ -73,6 +73,9 @@ firmware.hex:	firmware.bin
 
 program: firmware.hex
 	avrdude -c $(PROGRAMMER) -p attiny4313 -U lfuse:w:0xbf:m -U flash:w:firmware.hex -U hfuse:w:0x93:m -U efuse:w:0xff:m
+
+program-arduinoisp: firmware.hex
+	avrdude -c arduinoisp -p  attiny4313 -U lfuse:w:0xbf:m -U flash:w:firmware.hex -U hfuse:w:0x93:m -U efuse:w:0xff:m
 
 disasm:	firmware.bin
 	avr-objdump -d firmware.bin

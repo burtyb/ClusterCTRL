@@ -25,7 +25,7 @@ usbdrv/%.o: ../src/usbdrv/%.c | usbdrv
 %.o: ../src/%.c
 	$(COMPILE) -c $< -o $@
 
-config.o: config.c
+config.o: config.c config.h
 	$(COMPILE) -c config.c -o config.o
 
 usbdrv/%.o: ../src/usbdrv/%.S | usbdrv
