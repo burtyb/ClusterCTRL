@@ -8,6 +8,12 @@
  * License: GPL
  */
 
+#include "config.h" // Include hardware specific configuration header
+
+#if AUTOONDELAY > 7500
+#define __DELAY_BACKWARD_COMPATIBLE__
+#endif
+
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
@@ -19,8 +25,6 @@
 #include <avr/eeprom.h>
 
 #include <util/delay.h>
-
-#include "config.h" // Include hardware specific configuration header
 
 // CTRL_SIZE = number of bytes needed to store one bit per node
 # if CTRL_MAXPI%8
@@ -1217,6 +1221,9 @@ int	main(void) {
   wdt_enable(WDTO_8S);
   uint8_t tmpu8;
   uchar i;
+#if AUTOONDELAY > 7500
+  uint16_t podelay;
+#endif
 
 #if defined(GPIOE)
  // No HAT exists on power up
@@ -1380,8 +1387,19 @@ DEBUGF("INIT\n");
       LEDALERTPORT |= (1<<LEDALERTPIN);
 # endif
 # if defined(AUTOONDELAY)
+#  if AUTOONDELAY > 7500
+      podelay = AUTOONDELAY;
+      while(podelay>1000) {
+       wdt_reset();
+       _delay_ms(1000);
+       podelay-=1000;
+      }
+      wdt_reset();
+      _delay_ms(podelay);
+#  else
       wdt_reset();
       _delay_ms(AUTOONDELAY);
+#  endif
 # endif
       (*p[((i*8)+tmpu8)][0]) |= (1 << (int)p[((i*8)+tmpu8)][1]);
       // Is LEDPx enabled?
