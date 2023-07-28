@@ -1339,6 +1339,9 @@ DEBUGF("INIT\n");
 #if defined(GPIOD)
 # if defined(ENP1PORT) && defined(ENP1PIN)
    if((state.enp[0]>>0)&0x01) {
+#  if defined(LEDALERTPORT) && defined(LEDALERTPIN)
+   LEDALERTPORT |= (1<<LEDALERTPIN);
+#  endif
 #  if defined(AUTOONDELAY)
    wdt_reset();
    _delay_ms(AUTOONDELAY);
@@ -1355,6 +1358,9 @@ DEBUGF("INIT\n");
 # endif // P1
 # if defined(ENP2PORT) && defined(ENP2PIN)
    if((state.enp[0]>>1)&0x01) {
+#  if defined(LEDALERTPORT) && defined(LEDALERTPIN)
+    LEDALERTPORT |= (1<<LEDALERTPIN);
+#  endif
 #  if defined(AUTOONDELAY)
    wdt_reset();
    _delay_ms(AUTOONDELAY);
@@ -1369,6 +1375,9 @@ DEBUGF("INIT\n");
 #  endif
    }
 # endif // P2
+# if defined(LEDALERTPORT) && defined(LEDALERTPIN)
+   LEDALERTPORT &= ~(1<<LEDALERTPIN);
+# endif
 # if defined(USBBOOTP1PORT) && defined(USBBOOTP1PIN)
    if( (state.usbboot[0]>>0)&0x1 ) {
     USBBOOTP1PORT |= (1<<USBBOOTP1PIN);

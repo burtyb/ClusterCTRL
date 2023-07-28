@@ -31,6 +31,8 @@
 # define HUBENPIN  PD1
 # define HUBENHIGH // Hub is on when high
 
+#define AUTOONDELAY 1000 // ms to delay for Px auto power on
+
 # undef USBBOOT // usbboot(rpiboot) supported?
 
 # undef UARTDEBUG // Hardware supports debug UART
